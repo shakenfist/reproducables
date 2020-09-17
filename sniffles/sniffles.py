@@ -1,10 +1,49 @@
 import datetime
+import errno
 import libvirt
 import random
 import socket
 import sys
 import time
 import uuid
+
+
+# Enabling this port check makes the VM start correctly. Set this
+# to False to see about 10% failures in VM starts.
+ENABLE_PORT_CHECK = True
+
+
+def _port_free(port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(('0.0.0.0', port))
+        return True
+    except socket.error as e:
+        if e.errno == errno.EADDRINUSE:
+            print("Port is already in use")
+        else:
+            print(e)
+        return False
+    finally:
+        s.close()
+
+
+ALLOCATED = []
+
+
+def allocate_console_port():
+    global ALLOCATED
+
+    port = random.randint(30000, 50000)
+    while port in ALLOCATED:
+        port = random.randint(30000, 50000)
+
+    if ENABLE_PORT_CHECK:
+        while port in ALLOCATED or not _port_free(port):
+            port = random.randint(30000, 50000)
+
+    ALLOCATED.append(port)
+    return port
 
 
 def power_on(myxml):
@@ -84,8 +123,8 @@ def run_one():
 </domain>"""
 
     myuuid = str(uuid.uuid4())
-    serial = random.randint(30000, 50000)
-    vnc = random.randint(30000, 50000)
+    serial = allocate_console_port()
+    vnc = allocate_console_port()
     myxml = xml % {'uuid': myuuid,
                    'serial_port': serial,
                    'vnc_port': vnc}
@@ -106,7 +145,19 @@ def run_one():
     print('%s Finished after %d attempts'
           % (datetime.datetime.now(), attempts))
 
+    return attempts == 1
+
 
 if __name__ == '__main__':
-    for i in range(20):
-        run_one()
+    fast = 0
+    slow = 0
+
+    for i in range(100):
+        if run_one():
+            fast += 1
+        else:
+            slow += 1
+
+    print()
+    print()
+    print('Summary: %d fast and %d slow' % (fast, slow))
