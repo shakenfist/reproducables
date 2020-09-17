@@ -59,7 +59,7 @@ def run_one():
     <acpi/>
     <apic/>
   </features>
-  <cpu mode='host-passthrough'>
+  <cpu mode='host-passthrough'>sniffles:%(uuid)s
   </cpu>
   <clock offset='utc'>
     <timer name='rtc' tickpolicy='catchup'/>
@@ -99,12 +99,14 @@ def run_one():
 </domain>"""
 
     myuuid = str(uuid.uuid4())
+    serial = allocate_console_port()
+    vnc = allocate_console_port()
     myxml = xml % {'uuid': myuuid,
-                   'serial_port': allocate_console_port(),
-                   'vnc_port': allocate_console_port()}
+                   'serial_port': serial,
+                   'vnc_port': vnc}
 
-    print('%s Starting instance sniffles:%s'
-          % (datetime.datetime.now(), myuuid))
+    print('%s Starting instance sniffles:%s with serial=%d and vnc=%d'
+          % (datetime.datetime.now(), myuuid, serial, vnc))
     attempts = 1
 
     while not power_on(myxml) and attempts < 100:
