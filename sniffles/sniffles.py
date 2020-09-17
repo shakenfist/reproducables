@@ -7,21 +7,6 @@ import time
 import uuid
 
 
-def _port_free(port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        return s.connect_ex(('127.0.0.1', port)) == 0
-    finally:
-        s.close()
-
-
-def allocate_console_port():
-    port = random.randint(30000, 50000)
-    while not _port_free(port):
-        port = random.randint(30000, 50000)
-    return port
-
-
 def power_on(myxml):
     conn = libvirt.open(None)
     instance = conn.defineXML(myxml)
@@ -99,8 +84,8 @@ def run_one():
 </domain>"""
 
     myuuid = str(uuid.uuid4())
-    serial = allocate_console_port()
-    vnc = allocate_console_port()
+    serial = random.randint(30000, 50000)
+    vnc = random.randint(30000, 50000)
     myxml = xml % {'uuid': myuuid,
                    'serial_port': serial,
                    'vnc_port': vnc}
