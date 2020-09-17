@@ -46,3 +46,12 @@ This will give you output like this:
 
 This output means that we tried 13 times to start the instance, with five second
 gaps in between. Congratulations, you have the sniffles!
+
+But now I have heaps of VMs!
+============================
+
+You can clean them up like this:
+
+```
+for name in `virsh list --all | tr -s " " | grep sniffles | sed 's/.*sniffles/sniffles/' | cut -f 1 -d  " "`; do virsh destroy $name; virsh undefine $name; done
+```
